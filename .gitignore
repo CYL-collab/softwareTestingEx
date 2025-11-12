@@ -1,6 +1,6 @@
 keys.md
-unittest-java/target/
-unittest-cpp/build/
+**/target/
+**/build/
 **/.*/
 **/__pycache__/
 **/~*

@@ -2,44 +2,84 @@
 ## 0 提交说明
 本实验最终提交物为单个实验报告，请参考 `.\实验报告.md` 中要求撰写并提交。提交要求仅包含一个 PDF 格式的文件。
 
-提交截止时间： **2024-12-22（校历第 16 周周日） 23:59:59**
-提交地址： https://send2me.cn/y7bw80pA/Rd-n_iZhow4Uqg
+提交截止时间： **2025-12-21（校历第 17 周周日） 23:59:59**
+提交地址： https://gist.nju.edu.cn/course-testing/project.html
 
-## 1 C++ 单元测试
+## LAB1: Minishell 功能测试
 ### 1.1 实验目的
 
-利用 C++ 单元测试框架 googletest 的特性，提高单元测试编写和执行效率。
+利用 C++ 单元测试框架 googletest 的特性，对 Minishell 项目进行系统性的黑盒测试，实践参数化测试、等价类划分、边界值分析等测试方法。
 
-### 1.2 环境配置
+### 1.2 Minishell 项目介绍
 
-本实验的所有操作均可以在 vim，或记事本内完成。当然，由于现代代码编辑器提供了代码补全，调试支持，插件等一系列强大功能，我们在此推荐使用 [VSCode](https://code.visualstudio.com/) 以支持你在本实验的代码编写。为此，推荐在 VSCode 主侧栏的扩展商店中安装如下插件：
+Minishell 是一个简化版的 Unix Shell 实现，支持以下功能：
+
+**基础命令执行**
+- 可以执行绝对路径、相对路径或通过环境变量 PATH 查找的可执行文件（如 `/bin/ls` 或 `ls`）
+- 支持命令参数和选项
+- 支持单引号 `'` 和双引号 `"` 的字符串解析（不支持多行命令）
+
+**命令分隔与重定向**
+- 使用 `;` 分隔多个命令
+- 支持输出重定向 `>` 和追加重定向 `>>`
+- 支持输入重定向 `<`
+- 支持管道 `|`
+
+**环境变量与特殊变量**
+- 支持环境变量如 `$HOME`、`$PATH` 等
+- 支持特殊变量 `$?`（上一条命令的返回值）
+
+**信号处理**
+- `Ctrl-C` 中断当前程序
+- `Ctrl-\` 退出当前程序
+- `Ctrl-D` 发送 EOF
+
+**内置命令（Built-in）**
+- `echo`：输出文本，支持 `-n` 选项
+- `pwd`：显示当前工作目录
+- `cd`：切换目录
+- `env`：显示环境变量
+- `export`：设置环境变量
+- `unset`：删除环境变量
+- `exit`：退出 shell
+
+### 1.3 环境配置
+
+本实验需要在 Linux 或 macOS 环境下进行（Windows 用户可使用 WSL）。推荐使用 [VSCode](https://code.visualstudio.com/) 作为代码编辑器，并安装以下插件：
 
 - C/C++ Extension Pack
-- Extension Pack for Java
 - Python Extension Pack
 
-然后，为了正确编译并使用 gtest 测试 C++ 代码，你将需要：
+然后，为了正确编译并使用 gtest 测试 Minishell，你将需要：
 - 支持 C++14 及以上的 C++ 编译器
 - 构建工具 CMake 和 Make
+- Minishell 项目的编译依赖
 
 具体过程可参考 [GoogleTest官方文档](https://google.github.io/googletest/quickstart-cmake.html)。以下是各平台的推荐配置。
 
-对于 **Windows** 平台：
-- 推荐编译器为微软开发的 MSVC，通过下载 [Visual Studio 生成工具](https://aka.ms/vs/17/release/vs_BuildTools.exe)，并在其中勾选使用C++的桌面开发，安装。
-- 构建工具可在 [CMake](https://cmake.org/download/) 和 [Make](https://gnuwin32.sourceforge.net/packages/make.htm) 官网安装。
-  更推荐的方法是使用包管理器（比如[WinGet](https://github.com/microsoft/winget-cli), [Scoop](https://scoop.sh/) 和 [Chocolatey](https://chocolatey.org/install) ）一键安装。以 Scoop 为例，在 Powershell 中安装 Scoop：
-    ````` powershell
-    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-    Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-    `````
-    然后通过Scoop安装所需构建工具：
-    ````` powershell
-    scoop install cmake make
-    `````
+#### 编译 Minishell
 
-对于 **Linux** 平台，编译器使用 gcc/clang 均可。通过包管理器安装。以 Debian/Ubuntu 为例：
+首先需要编译 Minishell 项目。在项目根目录下进入 `source/minishell` 目录：
+
+````` bash
+cd source/minishell
+make
+`````
+
+编译成功后，会在当前目录生成 `minishell` 可执行文件。你可以手动测试：
+
+````` bash
+./minishell
+minishell$ echo "Hello World"
+Hello World
+minishell$ exit
+`````
+
+#### 配置测试环境
+
+对于 **Linux** 平台，编译器使用 clang，通过包管理器安装。以 Debian/Ubuntu 为例：
 ````` shell
-sudo apt install gcc g++ cmake make
+sudo apt install gcc g++ cmake make clang
 `````
 
 对于 **Mac** 平台，我们同样推荐使用包管理器 [Homebrew](https://brew.sh/) 配置环境。在 Mac 终端内输入
@@ -48,38 +88,157 @@ sudo apt install gcc g++ cmake make
 `````
 以安装 Homebrew。随后安装所需软件：
 ````` shell
-brew install gcc g++ cmake make
+brew install gcc g++ cmake make clang
 `````
 
 为验证构建工具已正确安装，在终端输入
 ````` shell
 cmake --version
 make --version
+clang --version
 `````
 若正确显示版本信息，表示工具已经安装并准备好使用。
 
-此时即可在项目中配置 gtest。新建一个 ``my_project`` 文件夹并进入:
-````` shell
-mkdir my_project && cd my_project
-`````
-在其中新建一个 ``hello_test.cc``，内容为：
-`````C++
-#include <gtest/gtest.h>
+### 1.4 GoogleTest 测试框架介绍
 
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+在 GoogleTest 中，定义了多种宏来编写测试。针对本实验的 Minishell 测试，我们将重点使用以下功能：
+
+#### TEST 宏
+`````C++
+TEST(TestSuiteName, TestName) {
+  ... statements ...
 }
 `````
+在测试套件 `TestSuiteName` 中定义一个名为 `TestName` 的测试。
 
-另新建一个 ``CMakeLists.txt`` ，使用 [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) 声明对 GoogleTest 的依赖，并声明要构建的 C++ 测试二进制文件:
-````` shell
+#### TEST_F 宏（测试夹具）
+`````C++
+TEST_F(TestFixtureName, TestName) {
+  ... statements ...
+}
+`````
+定义一个使用测试夹具类 `TestFixtureName` 的测试。测试夹具用于：
+- 在每个测试前进行初始化（如启动 minishell 进程）
+- 在每个测试后进行清理（如关闭进程、删除临时文件）
+- 复用测试代码，减少重复
+
+#### TEST_P 宏（参数化测试）
+`````C++
+TEST_P(TestFixtureName, TestName) {
+  ... statements ...
+}
+`````
+定义一个值参数化测试，使用测试夹具类 `TestFixtureName`。参数化测试的优势：
+- **减少重复代码**：相同的测试逻辑可以应用于不同的输入数据
+- **提高测试覆盖率**：轻松测试大量输入组合
+- **便于维护**：修改测试逻辑时只需改一处
+
+参数化测试特别适合测试 Shell 命令，因为：
+- 同一个命令可能有多种输入组合（参数、选项、边界值）
+- 可以系统性地测试等价类和边界值
+- 便于实施黑盒测试方法
+
+#### INSTANTIATE_TEST_SUITE_P 宏
+`````C++
+INSTANTIATE_TEST_SUITE_P(InstantiationName,
+                         TestSuiteName,
+                         param_generator)
+`````
+实例化参数化测试套件，其中 `param_generator` 可以是：
+- `Values(v1, v2, v3, ...)`: 显式指定参数值
+- `ValuesIn(container)`: 从容器中读取参数
+- `Range(begin, end, step)`: 生成范围内的参数
+- `Combine(g1, g2, ...)`: 组合多个参数生成器（笛卡尔积）
+
+#### 断言宏
+
+GoogleTest 提供了丰富的断言宏用于验证测试结果：
+
+**字符串比较断言**（Shell 测试中最常用）：
+- `EXPECT_STREQ(str1, str2)`: 期望两个 C 字符串相等
+- `EXPECT_STRNE(str1, str2)`: 期望两个 C 字符串不相等
+- `EXPECT_STRCASEEQ(str1, str2)`: 忽略大小写比较
+- `EXPECT_THAT(value, matcher)`: 使用匹配器进行复杂字符串匹配
+
+**基本断言**：
+- `EXPECT_TRUE(condition)`: 期望条件为真
+- `EXPECT_FALSE(condition)`: 期望条件为假
+- `EXPECT_EQ(val1, val2)`: 期望两个值相等
+- `EXPECT_NE(val1, val2)`: 期望两个值不相等
+
+**EXPECT vs ASSERT**：
+- `EXPECT_*`: 失败时记录错误，继续执行后续测试
+- `ASSERT_*`: 失败时立即终止当前测试用例
+
+更多断言宏可参考 [GoogleTest 官方文档](https://google.github.io/googletest/reference/assertions.html)。
+
+### 1.5 实验内容
+
+本实验将对 Minishell 的各项功能进行系统性测试，综合运用等价类划分、边界值分析等黑盒测试方法，并使用参数化测试提高测试效率。
+
+#### 1.5.1 基础测试框架搭建
+
+首先，我们需要创建一个测试辅助类来与 Minishell 进程交互。创建 `unittest-cpp/minishell_test_base.h`：
+
+`````C++
+#ifndef MINISHELL_TEST_BASE_H
+#define MINISHELL_TEST_BASE_H
+
+#include <gtest/gtest.h>
+#include <string>
+#include <array>
+#include <memory>
+#include <stdexcept>
+
+class MinishellTestBase : public ::testing::Test {
+protected:
+    std::string minishell_path = "../../source/minishell/minishell";
+    
+    // 执行命令并获取输出
+    std::string executeCommand(const std::string& command) {
+        std::string full_command = "echo \"" + command + "\" | " + minishell_path;
+        return execShellCommand(full_command);
+    }
+    
+    // 执行命令并获取退出码
+    int executeCommandGetExitCode(const std::string& command) {
+        std::string full_command = "echo \"" + command + "\" | " + minishell_path + "; echo $?";
+        std::string output = execShellCommand(full_command);
+        // 解析最后一行获取退出码
+        size_t pos = output.find_last_of('\n');
+        if (pos != std::string::npos && pos > 0) {
+            pos = output.find_last_of('\n', pos - 1);
+            if (pos != std::string::npos) {
+                return std::stoi(output.substr(pos + 1));
+            }
+        }
+        return -1;
+    }
+    
+private:
+    std::string execShellCommand(const std::string& cmd) {
+        std::array<char, 128> buffer;
+        std::string result;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        if (!pipe) {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
+        return result;
+    }
+};
+
+#endif // MINISHELL_TEST_BASE_H
+`````
+
+创建 `unittest-cpp/CMakeLists.txt`：
+
+````` cmake
 cmake_minimum_required(VERSION 3.14)
-project(unittest-cpp)
+project(minishell-tests)
 
-# GoogleTest requires at least C++14
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -88,224 +247,440 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/ff233bdd4cac0a0bf6e5cd45bda3406814cb2796.zip
 )
-# For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-# Define test executable name and source file
-set(TEST_EXECUTABLE_NAME hello_test)
-set(TEST_SOURCE_FILE hello_test.cc)
+# 定义测试可执行文件
+add_executable(minishell_builtin_test minishell_builtin_test.cc)
+target_link_libraries(minishell_builtin_test GTest::gtest_main)
 
-add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCE_FILE})
-target_link_libraries(${TEST_EXECUTABLE_NAME} GTest::gtest_main)
+add_executable(minishell_redirect_test minishell_redirect_test.cc)
+target_link_libraries(minishell_redirect_test GTest::gtest_main)
+
+add_executable(minishell_pipe_test minishell_pipe_test.cc)
+target_link_libraries(minishell_pipe_test GTest::gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(${TEST_EXECUTABLE_NAME})
+gtest_discover_tests(minishell_builtin_test)
+gtest_discover_tests(minishell_redirect_test)
+gtest_discover_tests(minishell_pipe_test)
 `````
 
-构建并运行测试：
+#### 1.5.2 内置命令测试（等价类划分）
+
+**测试目标**：测试 `echo` 命令的各种使用情况
+
+**等价类划分分析**：
+
+根据 `echo` 命令的功能，可以划分以下等价类：
+
+1. **输入类型等价类**：
+   - 有效等价类：
+     - EC1: 普通字符串（无特殊字符）
+     - EC2: 包含空格的字符串
+     - EC3: 空字符串
+     - EC4: 包含环境变量的字符串
+     - EC5: 包含特殊字符的字符串（需要引号）
+   - 无效等价类：
+     - EC6: 未定义的环境变量
+
+2. **选项等价类**：
+   - EC7: 无选项
+   - EC8: `-n` 选项（不输出换行符）
+   - EC9: 无效选项
+
+3. **引号使用等价类**：
+   - EC10: 单引号字符串
+   - EC11: 双引号字符串
+   - EC12: 混合引号
+
+创建 `unittest-cpp/minishell_builtin_test.cc`：
+
+`````C++
+#include "minishell_test_base.h"
+#include <gtest/gtest.h>
+
+// ========== echo 命令测试 ==========
+
+// 任务1: 完成基础 echo 测试
+TEST_F(MinishellTestBase, EchoSimpleString) {
+    std::string output = executeCommand("echo Hello");
+    // TODO: 使用 EXPECT_THAT 或 EXPECT_STREQ 验证输出包含 "Hello"
+    // 提示: 输出可能包含额外的 minishell 提示符，考虑使用部分匹配
+}
+
+TEST_F(MinishellTestBase, EchoEmptyString) {
+    std::string output = executeCommand("echo");
+    // TODO: 验证输出是否只包含换行符
+}
+
+TEST_F(MinishellTestBase, EchoWithSpaces) {
+    // TODO: 测试包含多个空格的字符串
+    // 提示: echo "Hello   World" 应该保留空格
+}
+
+// 参数化测试示例：测试不同的 echo 输入
+struct EchoTestParam {
+    std::string input;
+    std::string expected_output;
+    std::string description;
+};
+
+class EchoParameterizedTest : public MinishellTestBase,
+                               public ::testing::WithParamInterface<EchoTestParam> {
+};
+
+TEST_P(EchoParameterizedTest, EchoVariousInputs) {
+    EchoTestParam param = GetParam();
+    std::string output = executeCommand("echo " + param.input);
+    // TODO: 验证输出是否包含期望的字符串
+}
+
+// 任务2: 完成参数实例化
+// 提示: 测试以下情况:
+// - echo "Hello World"
+// - echo 'Single Quotes'
+// - echo $HOME (环境变量)
+// - echo "$USER is home" (包含环境变量的字符串)
+INSTANTIATE_TEST_SUITE_P(
+    EchoTests,
+    EchoParameterizedTest,
+    ::testing::Values(
+        // TODO: 在此添加测试参数
+        EchoTestParam{"\"Hello World\"", "Hello World", "Double quoted string"},
+        EchoTestParam{"'Single Quotes'", "Single Quotes", "Single quoted string"}
+        // 继续添加更多测试用例...
+    )
+);
+
+// ========== pwd 命令测试 ==========
+
+TEST_F(MinishellTestBase, PwdOutputsCurrentDirectory) {
+    // TODO: 执行 pwd 命令并验证输出是否为有效的目录路径
+    // 提示: 可以与系统的 getcwd() 结果比较
+}
+
+// ========== env 命令测试 ==========
+
+TEST_F(MinishellTestBase, EnvShowsEnvironmentVariables) {
+    std::string output = executeCommand("env");
+    // TODO: 验证输出包含至少一个环境变量（如 PATH, HOME）
+    // 提示: 使用 EXPECT_TRUE(output.find("PATH=") != std::string::npos)
+}
+
+// ========== cd 命令测试（边界值分析）==========
+
+class CdCommandTest : public MinishellTestBase,
+                      public ::testing::WithParamInterface<std::string> {
+};
+
+TEST_P(CdCommandTest, ChangeDirectory) {
+    std::string target_dir = GetParam();
+    // TODO: 执行 cd 命令，然后执行 pwd 验证目录是否改变
+    // 提示: executeCommand("cd " + target_dir + " && pwd")
+}
+
+// 任务3: 完成 cd 命令的边界值测试
+// 测试以下情况:
+// - cd ~ (home目录)
+// - cd / (根目录)
+// - cd . (当前目录)
+// - cd .. (父目录)
+// - cd /nonexistent (不存在的目录)
+INSTANTIATE_TEST_SUITE_P(
+    CdBoundaryTests,
+    CdCommandTest,
+    ::testing::Values(
+        // TODO: 添加边界值测试参数
+        "~",
+        "/"
+        // 继续添加...
+    )
+);
+
+// ========== export 和 unset 命令测试 ==========
+
+TEST_F(MinishellTestBase, ExportAndUnsetVariable) {
+    // 任务4: 完成以下测试
+    // 1. 使用 export 设置一个新的环境变量
+    // 2. 使用 echo 验证该变量已设置
+    // 3. 使用 unset 删除该变量
+    // 4. 再次 echo 验证该变量已删除
+    
+    // TODO: 实现测试逻辑
+}
+
+// ========== exit 命令测试 ==========
+
+TEST_F(MinishellTestBase, ExitCommand) {
+    // 任务5: 测试 exit 命令
+    // 提示: 可以测试 "exit 0", "exit 42" 等，验证退出码
+    int exit_code = executeCommandGetExitCode("exit 42");
+    // TODO: 验证退出码是否为 42
+}
+`````
+
+**实验要求**：
+1. 完成所有标记为 `TODO` 的测试用例
+2. 为 `echo` 命令至少添加 5 个参数化测试用例，覆盖不同的等价类
+3. 为 `cd` 命令完成边界值测试，至少包含 5 个测试点
+4. 完成 `export/unset` 和 `exit` 命令的测试
+5. 编译并运行测试，确保所有测试通过
+
+**编译运行**：
 ````` bash
-my_project$ cmake -S . -B build
--- The C compiler identification is GNU 10.2.1
--- The CXX compiler identification is GNU 10.2.1
-...
--- Build files have been written to: .../my_project/build
-
-my_project$ cmake --build build
-Scanning dependencies of target gtest
-...
-[100%] Built target gmock_main
-
-my_project$ cd build && ctest
-Test project .../my_project/build
-    Start 1: HelloTest.BasicAssertions
-1/1 Test #1: HelloTest.BasicAssertions ........   Passed    0.00 sec
-
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   0.01 sec
-`````
-
-### 1.3 GoogleTest语法介绍
-
-在GoogleTest中，定义了多种宏来编写测试。其中常用的包括：
-#### TEST
-`````C++
-TEST(TestSuiteName, TestName) {
-  ... statements ...
-}
-`````
-在测试套件``TestSuiteName``中定义一个名为``TestName``的测试。
-#### TEST_F 
-`````C++
-TEST_F(TestFixtureName, TestName) {
-  ... statements ...
-}
-`````
-定义一个名为``TestName``的测试，使用测试夹具类 ``TestFixtureName``。在测试的时候，我们经常遇到一个对象需要初始化，测试完可能还需要清理的情况，使用测试夹具可以批量完成此类操作。
-
-使用 TEST_F 能够复用夹具中定义的代码，使得测试更加模块化，并减少了重复代码。
-#### TEST_P
-`````C++
-TEST_P(TestFixtureName, TestName) {
-  ... statements ...
-}
-`````
-定义一个名为``TestName``的值参数化测试，使用测试夹具类 ``TestFixtureName``。测试套件名称为 ``TestFixtureName``。 
-
-使用 TEST_P 能够实现值参数化测试，即在一个测试下对不同参数值进行测试。这可以有效减少重复代码，提高测试覆盖率。
-
-#### INSTANTIATE_TEST_SUITE_P
-`````C++
-INSTANTIATE_TEST_SUITE_P(InstantiationName,TestSuiteName,param_generator)
-INSTANTIATE_TEST_SUITE_P(InstantiationName,TestSuiteName,param_generator,name_generator)
-`````
-实例化TEST_P定义的值参数化测试套件 ``TestSuiteName``。
-
-#### TYPED_TEST_SUITE
-`````C++
-TYPED_TEST_SUITE(TestFixtureName,Types) TYPED_TEST_SUITE(TestFixtureName,Types,NameGenerator)
-`````
-定义一个基于测试夹具 ``TestFixtureName`` 的类型参数化测试套件。使用参数 ``Types`` 表示要运行测试的数据类型列表。
-
-#### TYPED_TEST
-`````C++
-TYPED_TEST(TestSuiteName, TestName) {
-  ... statements ...
-}
-`````
-在类型参数化测试套件中定义一个具体的测试用例。在测试体内部，可以使用特殊名称 ``TypeParam`` 来引用类型参数，使用 ``TestFixture`` 来引用测试夹具类。
-
-更多测试用宏的资料可参考[官方文档](https://google.github.io/googletest/reference/testing.html)。 
-
-断言(Assertion)是单元测试中不可缺少的重要部分。在GoogleTest中，定义了多种断言宏：
-
-- 基本断言：如 EXPECT_TRUE、EXPECT_FALSE、ASSERT_TRUE 和 ASSERT_FALSE，用于检查测试中的条件。
-- 二元比较断言：比较两个值，包括 EXPECT_EQ、EXPECT_NE 等及其 ASSERT_ 对应形式。
-- 字符串比较断言：专门用于比较 C 字符串，包括 EXPECT_STREQ 和 EXPECT_STRCASEEQ 等。
-- 浮点数比较断言：如 EXPECT_FLOAT_EQ 和 EXPECT_NEAR，处理浮点数的精度问题。
-- 异常断言：检查预期的异常，如 EXPECT_THROW 和 EXPECT_NO_THROW。
-- 谓词断言：允许复杂逻辑检查，包括 EXPECT_PRED1、EXPECT_PRED2 等。
-
-每一类断言又分为两种：
-- **EXPECT断言**：在条件不满足时记录断言失败，但不终止当前测试用例。
-- **ASSERT断言**：在条件不满足时终止当前测试用例，不再执行后续的代码。
-
-更多断言宏相关资料可参考[官方文档](https://google.github.io/googletest/reference/assertions.html)。 
-
-## 1.4 实验内容
-
-本部分将通过数个例子，利用 googletest 功能进行单元测试实践。
-
-### 1.4.1 创建第一个单元测试
-
-在本节中，我们对一个计算器类进行测试，它提供了四个基本的数学运算方法：加法、减法、乘法和除法。实验预先提供了计算器类的实现 ``Calculator.h``，并在 ``calculator_test.cc`` 设置了测试夹具,提供了测试用例示例:
-`````C++
-TEST_F(CalculatorTest, AddsTwoNumbers) {
-    EXPECT_EQ(5, calc.add(2, 3));
-}
-`````
-
-本部分的任务如下：
-1. 在指定位置仿照示例完成 SubtractsTwoNumbers, MultipliesTwoNumbers, DividesTwoNumbers 的测试用例。（提示：由于 DividesTwoNumbers 涉及浮点运算，直接比较浮点数可能会因为极小的精度误差而导致测试失败，可考虑使用 [EXPECT_NEAR(val1,val2,abs_error)](https://google.github.io/googletest/reference/assertions.html#floating-point) 而不是 EXPECT_EQ 断言）。
-2. 请在指定位置构建DivisionByZeroThrows测试用例，验证除以0是能否触发异常。在其中使用 EXPECT_THROW(statement,exception_type) 断言。由 ``Calculator.h`` 可知，除以0触发的异常类型为 ``std::invalid_argument``。
-
-完成后，修改 ``CMakeLists.txt``，把 ``TEST_SOURCE_FILE`` 变量修改成 ``calculator_test.cc``，然后在 ``./unittest-cpp`` 目录下编译并运行测试：
-`````bash
+cd unittest-cpp
+cmake -S . -B build
 cmake --build build
-cd build && ctest
-`````
-测试结果显示
-`````bash
-Test project /your/path
-      Start  1: CalculatorTest.AddsTwoNumbers
- x/xx Test  #1: CalculatorTest.AddsTwoNumbers ............   Passed    0.05 sec
-      Start  2: CalculatorTest.SubtractsTwoNumbers
- ...
-
-100% tests passed, x tests failed out of x
-
-Total Test time (real) =   0.xx sec
+cd build && ctest --verbose
 `````
 
-### 1.4.2 值参数化测试
+#### 1.5.3 重定向功能测试（组合测试）
 
-如 1.3 中所述，值参数化测试可以组织一组不同的测试数据，对其调用相同的测试方法进行测试。GoogleTest的官方文档详细阐述了如何使用 [值参数化测试](https://google.github.io/googletest/advanced.html#value-parameterized-tests)：
-1. 定义测试夹具类。以 FooTest 为例：
-    `````C++
-    class FooTest :
-        public testing::TestWithParam<absl::string_view> {
-            // 部署测试夹具
-    };
-    `````
-2. 使用 TEST_P 定义所需的测试用例。
-   `````C++
-   TEST_P(FooTest, DoesBlah) {
-      // 使用 GetParam() 方法获取参数
-      EXPECT_TRUE(foo.Blah(GetParam()));
-      ...
+**测试目标**：测试输入/输出重定向功能（`>`, `>>`, `<`）
+
+**测试策略**：使用 `Combine()` 测试不同命令和重定向方式的组合
+
+创建 `unittest-cpp/minishell_redirect_test.cc`：
+
+`````C++
+#include "minishell_test_base.h"
+#include <gtest/gtest.h>
+#include <fstream>
+#include <cstdio>
+
+class RedirectTest : public MinishellTestBase {
+protected:
+    std::string temp_file = "/tmp/minishell_test_output.txt";
+    std::string input_file = "/tmp/minishell_test_input.txt";
+    
+    void SetUp() override {
+        // 清理可能存在的测试文件
+        std::remove(temp_file.c_str());
+        std::remove(input_file.c_str());
     }
-
-    TEST_P(FooTest, HasBlahBlah) {
-      ...
+    
+    void TearDown() override {
+        // 清理测试文件
+        std::remove(temp_file.c_str());
+        std::remove(input_file.c_str());
     }
-   `````
-3. 使用 INSTANTIATE_TEST_SUITE_P 使用所需参数集来实例化测试套件。
-   `````C++
-   INSTANTIATE_TEST_SUITE_P(Default,
-                              FooTest,
-                              testing::Values("meeny", "miny", "moe"));
-   `````
+    
+    std::string readFile(const std::string& filename) {
+        std::ifstream file(filename);
+        std::string content((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        return content;
+    }
+    
+    void writeFile(const std::string& filename, const std::string& content) {
+        std::ofstream file(filename);
+        file << content;
+    }
+};
 
-本部分的任务是，在指定位置完成 ``CanAddNumbers`` 用例的编写：
-- 定义一个新的测试夹具 ``CalculatorParamTest`` ，使用 ``TestWithParam<int>`` 作为基类代替 ``Test``。
-- 使用 TEST_P 定义 ``CanAddNumbers`` 用例，使用 ``GetParam()`` 调用一个参数，再加上一个常数，以测试 ``add`` 方法，并使用 EXPECT_EQ 作为断言。
-- 使用 INSTANTIATE_TEST_SUITE_P(InstantiationName,TestSuiteName,param_generator) 实例化该测试套件，使用五个参数[1,2,3,4,5]。
+// ========== 输出重定向测试 ==========
 
-在 ``./unittest-cpp`` 目录下编译并运行测试，观察结果。
+TEST_F(RedirectTest, SimpleOutputRedirect) {
+    // 任务1: 测试基本输出重定向
+    executeCommand("echo 'Hello World' > " + temp_file);
+    std::string content = readFile(temp_file);
+    // TODO: 验证文件内容是否为 "Hello World\n"
+}
 
-### 1.4.3 在值参数化测试中考虑组合
+TEST_F(RedirectTest, OutputRedirectOverwrite) {
+    // 任务2: 测试输出重定向是否会覆盖已存在的文件
+    writeFile(temp_file, "Old content\n");
+    executeCommand("echo 'New content' > " + temp_file);
+    std::string content = readFile(temp_file);
+    // TODO: 验证文件内容是否被覆盖为 "New content\n"
+}
 
-在复杂软件系统中，经常会出现这样的现象:软件被安装在一个新的位置或者被不同用户使用后，出现了一组原本不存在的新错误。这是由于，这些变化导致了一组不同的输入，其中一些输入组合触发了故障。gtest 在参数化测试中引入了 ``Combine()`` 方法，将 n 个输入通过笛卡尔积的方式组合成 n 元组进行测试。
+TEST_F(RedirectTest, AppendRedirect) {
+    // 任务3: 测试追加重定向
+    executeCommand("echo 'Line 1' > " + temp_file);
+    executeCommand("echo 'Line 2' >> " + temp_file);
+    std::string content = readFile(temp_file);
+    // TODO: 验证文件包含两行内容
+}
 
-本部分的任务是，在指定位置完成 ``AddCombination`` 用例的编写。可参考官方文档 [参数化测试](https://google.github.io/googletest/advanced.html#value-parameterized-tests)：
+// ========== 输入重定向测试 ==========
 
-- 定义一个新的测试夹具 ``CalculatorCombinedTest`` ，使用 ``TestWithParam`` 作为基类。注意此处的参数应当是两个 int 组成的 tuple。
-- 使用 TEST_P 定义 ``AddCombination`` 用例，使用 ``GetParam()`` 调用两个参数，以测试 ``add`` 方法，并使用 EXPECT_EQ 作为断言。
-- 使用 INSTANTIATE_TEST_SUITE_P(InstantiationName,TestSuiteName,param_generator) 实例化该测试套件，使用 Combine 组合两个 Values 参数集，参数任选。 
+TEST_F(RedirectTest, InputRedirect) {
+    // 任务4: 测试输入重定向
+    writeFile(input_file, "test input\n");
+    std::string output = executeCommand("cat < " + input_file);
+    // TODO: 验证输出是否为文件内容
+}
 
-在 ``./unittest-cpp`` 目录下编译并运行测试，观察结果。
+// ========== 参数化测试：组合测试不同命令和重定向方式 ==========
 
-### 1.4.4 类型参数化测试
+struct RedirectCombineParam {
+    std::string command;
+    std::string redirect_op;
+    std::string content;
+};
 
-[类型参数化测试](https://google.github.io/googletest/advanced.html#type-parameterized-tests) 可以在同一段测试代码中，使用不同数据类型进行测试,不必为每个数据类型单独编写测试逻辑。我们现在的计算器实现 ``Calculator.h`` 只能接受 ``int`` 作为输入，因此，你需要：
-- (已完成)扩展计算器实现使其支持 ``double`` 和 ``float``。为此，在 ``UniversalCalculator.h`` 中进行[模板声明](https://learn.microsoft.com/en-us/cpp/cpp/templates-cpp) ``template <typename T>`` 并将四个基本的数学运算方法均改写为模板函数（e.g., ``T add(T a, T b)``）。
-- 创建一个新的测试文件 ``universalCalculator_test.cc``，并在其中：
-  - 定义一个类型参数化的测试套件 ``CalculatorTest``:
-    `````C++
-    template <typename T>
-    class CalculatorTest : public ::testing::Test {};
-    `````
-  - 定义类型列表 ``MyTypes``，其中包含了我们要测试的类型（包括 ``int``, ``float``, ``double``）。
-    `````C++
-    using MyTypes = ::testing::Types<int, float, double>;
-    `````
-  - 使用 ``TYPED_TEST_SUITE(CalculatorTest, MyTypes)`` 绑定测试类和类型列表。
-  - 使用``TYPED_TEST(CalculatorTest, AddTest)`` 编写测试逻辑。注意使用 ``TypeParam`` 引用类型参数(``UniversalCalculator<TypeParam> calc``)，以实例化计算器类并定义两个常数为输入参数。使用 EXPECT_EQ 测试一组用例即可。
+class RedirectCombineTest : public RedirectTest,
+                            public ::testing::WithParamInterface<RedirectCombineParam> {
+};
 
-在 ``./unittest-cpp`` 目录下编译并运行测试，观察结果。
+TEST_P(RedirectCombineTest, CombinedRedirectTest) {
+    RedirectCombineParam param = GetParam();
+    
+    // 构建完整命令
+    std::string full_command = param.command + " " + param.redirect_op + " " + temp_file;
+    executeCommand(full_command);
+    
+    std::string content = readFile(temp_file);
+    // TODO: 根据参数验证输出
+}
 
-## 1.5 思考题
+// 任务5: 使用 Combine 创建组合测试
+// 组合不同的命令 (echo, ls, pwd) 和重定向操作符 (>, >>)
+INSTANTIATE_TEST_SUITE_P(
+    RedirectCombinations,
+    RedirectCombineTest,
+    ::testing::Values(
+        // TODO: 添加不同的组合参数
+        RedirectCombineParam{"echo 'test'", ">", "test"},
+        RedirectCombineParam{"echo 'append'", ">>", "append"}
+        // 继续添加更多组合...
+    )
+);
+`````
+
+**实验要求**：
+1. 完成所有 `TODO` 标记的测试
+2. 使用 `Combine()` 或 `Values()` 创建至少 6 个组合测试用例
+3. 测试边界情况：空文件、不存在的文件、多次重定向等
+
+#### 1.5.4 管道功能测试（决策表测试）
+
+**测试目标**：测试管道 `|` 功能以及管道与其他功能的组合
+
+**决策表分析**：
+
+管道功能涉及多个条件的组合：
+
+| 条件 | C1: 命令1有效 | C2: 命令2有效 | C3: 有重定向 | 预期结果 |
+|------|--------------|--------------|-------------|----------|
+| R1   | Y            | Y            | N           | 成功     |
+| R2   | Y            | Y            | Y           | 成功     |
+| R3   | Y            | N            | N           | 失败     |
+| R4   | N            | Y            | N           | 失败     |
+
+创建 `unittest-cpp/minishell_pipe_test.cc`：
+
+`````C++
+#include "minishell_test_base.h"
+#include <gtest/gtest.h>
+
+// ========== 基础管道测试 ==========
+
+TEST_F(MinishellTestBase, SimplePipe) {
+    // 任务1: 测试基本管道功能
+    std::string output = executeCommand("echo 'hello' | cat");
+    // TODO: 验证输出
+}
+
+TEST_F(MinishellTestBase, MultiplePipes) {
+    // 任务2: 测试多重管道
+    std::string output = executeCommand("echo 'test' | cat | cat");
+    // TODO: 验证输出
+}
+
+TEST_F(MinishellTestBase, PipeWithGrep) {
+    // 任务3: 测试管道与 grep 组合
+    std::string output = executeCommand("echo -e 'line1\\nline2\\nline3' | grep 'line2'");
+    // TODO: 验证只输出 line2
+}
+
+// ========== 管道与重定向组合测试 ==========
+
+TEST_F(MinishellTestBase, PipeWithRedirect) {
+    // 任务4: 测试管道与重定向组合
+    // 提示: echo "test" | cat > /tmp/test_output.txt
+    // TODO: 实现测试
+}
+
+// ========== 参数化测试：不同的管道组合 ==========
+
+struct PipeTestParam {
+    std::string command;
+    std::string expected_behavior;
+    bool should_succeed;
+};
+
+class PipeParameterizedTest : public MinishellTestBase,
+                               public ::testing::WithParamInterface<PipeTestParam> {
+};
+
+TEST_P(PipeParameterizedTest, PipeVariousCombinations) {
+    PipeTestParam param = GetParam();
+    
+    if (param.should_succeed) {
+        std::string output = executeCommand(param.command);
+        // TODO: 验证成功的情况
+    } else {
+        // TODO: 验证失败的情况（检查退出码或错误信息）
+    }
+}
+
+// 任务5: 实现决策表中的测试用例
+INSTANTIATE_TEST_SUITE_P(
+    PipeDecisionTable,
+    PipeParameterizedTest,
+    ::testing::Values(
+        // TODO: 根据决策表添加测试参数
+        // R1: 两个有效命令，无重定向
+        PipeTestParam{"echo 'test' | cat", "success", true},
+        // R2: 两个有效命令，有重定向
+        PipeTestParam{"echo 'test' | cat > /tmp/out.txt", "success", true}
+        // 继续添加 R3, R4...
+    )
+);
+
+// ========== 边界值测试 ==========
+
+TEST_F(MinishellTestBase, EmptyPipe) {
+    // 任务6: 测试空管道
+    std::string output = executeCommand(" | cat");
+    // TODO: 验证行为
+}
+
+TEST_F(MinishellTestBase, PipeWithEmptyCommand) {
+    // 任务7: 测试管道前后有空命令
+    std::string output = executeCommand("echo 'test' | ");
+    // TODO: 验证行为
+}
+`````
+
+**实验要求**：
+1. 完成所有 `TODO` 标记的测试
+2. 根据决策表实现至少 4 个测试规则
+3. 测试至少 3 个边界情况
+4. 测试管道与重定向的组合（至少 2 种组合）
+
+**编译运行**：
+````` bash
+cd unittest-cpp
+cmake -S . -B build
+cmake --build build
+cd build && ctest --verbose
+`````
+
+### 1.6 思考题
 
 请依据实验内容简要回答下列思考题：
 
-1. 除了 `1.4.1` 中使用的EXCEPT 断言，还有什么场景更适合使用 ASSERT 断言？
-2. 在 `1.4.3` 所述的值参数化测试中，如果输入参数的全排列面临组合爆炸问题，你有什么策略减少测试用例数量？
-3. 在 `1.4.4` 所述类型参数化测试中，如何处理类型之间行为的差异？
-
-## 2 Java 单元测试
+1. 在 Shell 测试中，为什么 `EXPECT_*` 断言比 `ASSERT_*` 断言更常用？什么情况下应该使用 `ASSERT_*`？
+2. 在参数化测试中，如何选择代表性的测试参数以达到较高的测试覆盖率同时避免测试用例过多？
+3. 对于 `cd` 命令的测试，除了边界值分析外，还可以使用哪些黑盒测试方法？请举例说明。
+4. 如果要测试 Minishell 的引号处理功能（单引号、双引号、嵌套引号），应该如何设计等价类？
+5. 使用 `Combine()` 进行组合测试时，如何避免组合爆炸问题？## 2 Java 单元测试
 ### 2.1 实验目的
 
 使用 Java 单元测试框架 JUnit 的特性，实践部分黑盒和白盒测试方法。
