@@ -53,102 +53,56 @@ protected:
 };
 
 // ========================================
-// 输出重定向测试
+// 使用 Combine() 创建组合测试
 // ========================================
 
-TEST_F(RedirectTest, SimpleOutputRedirect) {
-    // 任务1: 测试基本输出重定向
-    executeCommand("echo 'Hello World' > " + temp_file);
+// 参数结构，用于 Combine() 测试
+class CombineRedirectTest : public RedirectTest,
+                            public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
+};
+
+TEST_P(CombineRedirectTest, CombineRedirectTest) {
+    std::string command = std::get<0>(GetParam());
+    std::string redirect_op = std::get<1>(GetParam());
     
-    // TODO: 验证文件是否被创建
-    // EXPECT_TRUE(fileExists(temp_file));
+    // 如果是追加操作，先写入一些初始内容
+    if (redirect_op == ">>") {
+        executeCommand("echo 'initial' > " + temp_file);
+    }
     
+    // 构建完整命令
+    std::string full_command = command + " " + redirect_op + " " + temp_file;
+    executeCommand(full_command);
+    
+    // 读取文件内容
     std::string content = readFile(temp_file);
-    // TODO: 验证文件内容是否包含 "Hello World"
-}
-
-TEST_F(RedirectTest, OutputRedirectOverwrite) {
-    // 任务2: 测试输出重定向是否会覆盖已存在的文件
-    writeFile(temp_file, "Old content\n");
-    executeCommand("echo 'New content' > " + temp_file);
     
-    std::string content = readFile(temp_file);
-    // TODO: 验证文件内容是否被覆盖为 "New content"
-    // 提示: 旧内容不应该存在
+    // 验证文件被创建
+    EXPECT_TRUE(fileExists(temp_file));
+
+    // TODO: 根据不同的命令和重定向操作，验证文件内容是否符合预期
+    if (command.find("echo") != std::string::npos) {
+        EXPECT_NE(content.find("test"), std::string::npos);
+    } 
+
 }
 
-TEST_F(RedirectTest, AppendRedirect) {
-    // 任务3: 测试追加重定向
-    executeCommand("echo 'Line 1' > " + append_file);
-    executeCommand("echo 'Line 2' >> " + append_file);
-    
-    std::string content = readFile(append_file);
-    // TODO: 验证文件包含两行内容
-    // 提示: 检查是否同时包含 "Line 1" 和 "Line 2"
-}
-
-TEST_F(RedirectTest, AppendToNonExistentFile) {
-    // TODO: 测试追加到不存在的文件（应该创建文件）
-    executeCommand("echo 'First line' >> " + temp_file);
-    
-    // 验证文件被创建且包含内容
-}
-
-TEST_F(RedirectTest, MultipleOutputRedirects) {
-    // TODO: 测试多次重定向到同一个文件
-    // echo "A" > file; echo "B" > file
-    // 最终文件应该只包含 "B"
-}
-
-// ========================================
-// 输入重定向测试
-// ========================================
-
-TEST_F(RedirectTest, InputRedirect) {
-    // 任务4: 测试输入重定向
-    writeFile(input_file, "test input content\n");
-    
-    std::string output = executeCommand("cat < " + input_file);
-    // TODO: 验证输出是否包含文件内容
-}
-
-TEST_F(RedirectTest, InputRedirectNonExistent) {
-    std::string output = executeCommand("cat < /nonexistent_file_xyz.txt");
-    // TODO: 测试从不存在的文件读取,应该产生错误
-}
-
-// ========================================
-// 组合重定向测试
-// ========================================
-
-TEST_F(RedirectTest, InputAndOutputRedirect) {
-    // 任务4: 测试输入重定向和输出重定向的组合使用
-    writeFile(input_file, "input data\n");
-    executeCommand("cat < " + input_file + " > " + temp_file);
-    
-    std::string content = readFile(temp_file);
-    // TODO: 验证输出文件包含输入文件的内容
-}
-
-// ========================================
-// 边界值测试
-// ========================================
-
-TEST_F(RedirectTest, RedirectEmptyOutput) {
-    // TODO: 测试重定向空输出
-    executeCommand("echo > " + temp_file);
-    // 文件应该被创建，但可能只包含换行符或为空
-}
-
-TEST_F(RedirectTest, RedirectToReadOnlyFile) {
-    // TODO: 测试重定向到只读文件（如果可以设置权限）
-    // 应该产生错误
-}
-
-TEST_F(RedirectTest, RedirectLargeOutput) {
-    // TODO: 测试重定向大量输出
-    // 例如: ls -la /usr/bin > file
-}
+// 任务: 使用 Combine() 创建笛卡尔积组合测试
+// Combine() 可以组合多个参数生成器，生成所有可能的组合
+// 例如: 3个命令 × 2个操作符 = 6个测试用例
+INSTANTIATE_TEST_SUITE_P(
+    CombineRedirectCombinations,
+    CombineRedirectTest,
+    ::testing::Combine(
+        // TODO: 补充不同的命令（pwd，env等）
+        ::testing::Values(
+            "echo 'test1'"
+        ),
+        // 第二维: 不同的重定向操作符（2个）
+        // 3个命令 × 2个操作符 = 6个组合测试用例
+        ::testing::Values(">", ">>")
+    )
+);
 
 // ========================================
 // 主函数

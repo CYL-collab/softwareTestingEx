@@ -1,0 +1,9 @@
+# 不要提交敏感信息到版本控制
+.env
+*.pyc
+__pycache__/
+.DS_Store
+reports/
+*.log
+.vscode/
+.idea/

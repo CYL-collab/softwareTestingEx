@@ -3,7 +3,7 @@
 #include <string>
 
 // ========================================
-// Echo 命令测试（等价类划分）
+// Echo 命令测试
 // ========================================
 
 // 任务1: 完成基础 echo 测试
@@ -50,7 +50,7 @@ INSTANTIATE_TEST_SUITE_P(
 );
 
 // ========================================
-// Cd 命令测试（边界值分析）
+// cd 命令测试（边界值分析）
 // ========================================
 
 class CdCommandTest : public MinishellTestBase,
@@ -72,12 +72,12 @@ TEST_P(CdCommandTest, ChangeDirectory) {
     {
         // TODO: 父目录，假设测试在某个已知目录下运行
     } else {
-        // TODO: 一般目录，验证是否成功切换
+        // TODO: 一般目录， pwd 验证是否成功切换
     }
     
 }
 
-// 任务5: 完成 cd 命令的边界值测试用例实例化
+
 INSTANTIATE_TEST_SUITE_P(
     CdBoundaryTests,
     CdCommandTest,

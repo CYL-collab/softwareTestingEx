@@ -96,22 +96,7 @@ class ShoppingSystemTests(unittest.TestCase):
     # ---------------------- 结算和支付功能测试 ----------------------
     def test_checkout_and_payment(self):
         """测试填写收货信息和确认订单的结算功能"""
-        self.login("standard_user", "secret_sauce")
-        self.reset_state()
-        self.add_to_cart("add-to-cart-sauce-labs-backpack")
-        self.driver.get("https://www.saucedemo.com/cart.html")
-        self.driver.find_element(By.ID, 'checkout').click()
-        # 填写收货信息
-        self.driver.find_element(By.ID, 'first-name').send_keys("123 Main St")
-        self.driver.find_element(By.ID, 'last-name').send_keys("12345")
-        self.driver.find_element(By.ID, 'postal-code').send_keys("12345")
-        self.driver.find_element(By.ID, 'continue').click()
-        # 确认订单
-        finish_button = self.driver.find_element(By.ID, 'finish')
-        finish_button.click()
-        # 验证是否成功生成订单
-        confirmation_message = self.driver.find_element(By.ID, 'checkout_complete_container').text
-        self.assertIn(confirmation_message, "Thank you for your order!\nYour order has been dispatched, and will arrive just as fast as the pony can get there!\nBack Home")
+        # TODO: 请补充完整测试代码
 
     @classmethod
     def tearDownClass(cls):
