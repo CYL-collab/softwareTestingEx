@@ -1,0 +1,3 @@
+[submodule "source/minishell"]
+	path = source/minishell
+	url = https://github.com/cclaude42/minishell.git
