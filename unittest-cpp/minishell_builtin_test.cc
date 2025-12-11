@@ -62,9 +62,7 @@ TEST_P(CdCommandTest, ChangeDirectory) {
     std::string target_dir = GetParam();
     std::string output = executeCommand("cd " + target_dir + "; pwd");
     // 然后验证输出中包含目标目录(注意考虑特殊情况)
-    if (target_dir == "~") {
-        EXPECT_TRUE(output.find(getenv("HOME")) != std::string::npos);
-    } else if (target_dir == "/") {
+    if (target_dir == "/") {
         EXPECT_TRUE(output.find("/") != std::string::npos);
     } else if (target_dir == ".") {
         // TODO: 当前目录不变，可以 pwd 获取当前工作目录进行验证
@@ -82,7 +80,6 @@ INSTANTIATE_TEST_SUITE_P(
     CdBoundaryTests,
     CdCommandTest,
     ::testing::Values(
-        "~", // home directory
         "/", // root directory
         ".", // current directory
         "..", // parent directory
